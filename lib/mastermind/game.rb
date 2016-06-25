@@ -1,3 +1,7 @@
+require_relative "game_board"
+require_relative "human_player"
+require_relative "ai"
+
 CHOICES = ["r","g","y","b","m","c"]
 
 class Game
@@ -25,7 +29,7 @@ class Game
 			@current_row = @game_board.board[@current_turn]
 			@current_row << get_feedback(@current_row, @code_to_break)
 			@game_board.print_board
-			 
+			
 			if correct_guess?
 			    puts "\n#{@code_breaker.class.name.split('::').last} wins"
 			    puts "Answer: #{@code_to_break.join("|")}"
@@ -129,103 +133,6 @@ class Game
         @code_breaker = @player
 		@code_maker = @ai
 	end
-end
-
-class GameBoard
-	def initialize
-		@board = Hash.new{|hash,key| hash[key] = [] } 
-	end
-	attr_accessor :board
-
-	def print_board
-	    @board.each do |key, array|
-	        code = array[0].join("|")
-	        feedback = array[1].join("")
-	        puts "#{key}: #{code}     #{feedback}"
-	    end
-	end
-	
-	def update_board(current_turn, row)
-        @board[current_turn] << row.split("")
-	end
-	
-	def reset_board
-	    @board = Hash.new{|hash,key| hash[key] = [] } 
-	end
-end
-
-class Player
-	def initialize(game)
-		@game = game
-	end
-end
-
-class HumanPlayer < Player
-    def guess_code
-		puts "\nInput your guess. (r)ed, (g)reen, (y)ellow, (b)lue, (m)agenta, and (c)yan"
-		answer = gets.chomp.downcase
-
-		until answer.length == 4
-			puts "Invalid input. Please try again."
-			answer = gets.chomp.downcase
-		end
-		
-		@game.game_board.update_board(@game.current_turn, answer)
-	end
-
-	def make_code
-		puts "What's the code? Select 4 combinations of the following: (r)ed, (g)reen, (y)ellow, (b)lue, (m)agenta, and (c)yan"
-		answer = gets.chomp.downcase
-		
-		until answer.length == 4
-			puts "Invalid input. Please try again."
-			answer = gets.chomp.downcase
-		end
-	    
-		@game.code_to_break = answer.split("")
-	end
-end
-
-class AI < Player
-    def guess_code
-        if @game.current_turn == 1
-            create_set_of_all
-            initial_guess = "rrbb"
-            @game.game_board.update_board(@game.current_turn, initial_guess)
-        else
-            puts "\nAI is thinking.."
-            sleep 1.5
-            calculated_guess = calculate_next_choice.join("")
-            @game.game_board.update_board(@game.current_turn, calculated_guess)
-        end
-    end
-    
-    def make_code
-        @game.code_to_break = CHOICES.sample(4)
-    end
-    
-    #Basic implementation of Knuth's algorithm
-    def calculate_next_choice
-        previous_turn = @game.current_turn - 1
-        previous_row = @game.game_board.board[previous_turn]
-        previous_feedback = previous_row[1]
-        #If the number of ! and * is different from the user feedback, discard that possibility since it cannot possibly be the answer.
-        @all_choices.delete_if {|possible_choice| @game.get_feedback(previous_row, possible_choice) != previous_feedback}
-        return @all_choices[0]
-    end
-    
-    def create_set_of_all
-        @all_choices = Array.new
-	    (0..5).each do |index1|
-		    (0..5).each do |index2|
-		        (0..5).each do |index3|
-		          	(0..5).each do |index4|
-		            @all_choices << [CHOICES[index1],CHOICES[index2],CHOICES[index3],CHOICES[index4]]
-		          	end
-		        end
-		    end
-	    end
-    end
 end
 
 game = Game.new.play
